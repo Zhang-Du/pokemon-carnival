@@ -1,0 +1,543 @@
+
+<html>
+	<head>
+		<script src="https://d3js.org/d3.v6.min.js"></script>
+		<link rel="stylesheet" href="./style.css" />
+		<meta charset="utf-8">
+		<!-- <script src="RadarChart.js"></script> -->
+	</head>
+	<style>
+		text.txt1{
+		font-family: Georgia, serif;
+		font-weight: bold;
+		font-size: 18px;
+		}
+		text.txt2{
+		font-family: Georgia, serif;
+		font-size: 14px;
+		}	
+
+		.float-container{
+			padding-left: 50px;
+		}
+		.float-child{
+			width: 50%;
+	    	float: left;
+	    /*padding: 20px;*/
+	    /* border: 2px solid red; */
+		}
+		.image-container{
+			/*padding: 10px;*/
+		}
+		.image-child{
+			width: 30%;
+	    	float: right;
+	    	/*padding: 10px;*/
+		}
+		#label{
+			font-size: 18px;
+			font-family: Georgia, serif;
+		}
+		.image-cont{
+			padding-right: 400px;
+			/*padding-top: 20px;*/
+		}
+		.filter {
+			padding-left: 100px;
+
+		}
+    </style>
+	<body>
+
+		    <h1>Pokemon Carnival</h1>
+				<div class="bg-image"></div>
+		    <form>
+				<div>
+					<label class='filter'>Pokemon ID: </label>
+					<input class='filter' type="text" id="pid" name="name" size = '4' maxlength='3'  
+					       placeholder="1 - 721">
+					<button class='filter' class="btn" type="button" onclick="return find_pokemon()">Submit</button>
+				</div>
+			</form>
+
+			<div>
+				<label class='filter'>Pokemon Generation: </label>
+			    <select id="selectButton_gen" class='filter' ></select>
+			</div>
+
+			<div>
+				<label class='filter'>Pokemon Type:&nbsp&nbsp&nbsp  </label>
+				<select id="selectButton_type" class='filter' ></select>
+			</div>
+
+			<div>
+				<label class='filter'>Legend Pokemon:&nbsp</label>
+				<select id="selectButton_legend" class='filter' ></select>
+			</div>
+			<!-- </g> -->
+
+			<div class="float-container">
+				<div class="float-child">
+		    <svg id="graph" height="800" width="800" style="background: #sff; margin-top:50px" ></svg>
+
+		    <div class="button-cont">
+		        <button class="big-button" type="button" name="button">Show Me More</button>
+		    </div>
+			</div>
+
+			<div class="float-child">
+				<div class="image-cont">
+					<div class='image-child'><img id ='portait' width="300" height="300"></div>
+						<div id='label' class="image-child">
+							<br>
+							<br>
+							<div><label class = 'info' id = 'l_name'>Pokemon Name: </label></div>
+							<div><label class = 'info' id = 'l_type'>Pokemon Type: </label></div>
+							<div><label class = 'info' id = 'l_gen'>Pokemon Generation: </label></div>
+							<div><label class = 'info' id = 'l_leg'>Legendary Pokemon : </label></div>
+							<div><label class = 'info' id = 'l_total'>Total Value : </label></div>
+					    </div>	
+					</div>
+			</div>
+		</div>
+
+
+
+		<script type="text/javascript">
+			d3.selectAll('.info').attr('transform', "translate(300, 0)");
+			var data;
+			document.body.style.backgroundImage="url(background.png)";
+			d3.select('body').attr('opacity', 0.5)
+
+			const colors = {'Grass':'green', 'Fire':'red','Water':'blue','Flying':'navy','Poison':'purple','Ground':'brown'
+							,'Electric':'yellow', 'Normal':'grey','Fairy':'pink','Bug':'Auqamarin','Fighting':'PaleGodenrod',
+							'Ghost':'DarkVoilet','Rock':'Peru','Ice':'Cyan','Dark':'black','Psychic':'	Tomato'}
+			const allGroup_generation = ['All','1','2','3','4','5','6'];
+			const allGroup_type = ['All','Grass', 'Fire','Water','Flying','Poison','Ground',
+									'Electric', 'Normal','Fairy','Bug','Fighting',
+									'Ghost','Rock','Ice','Dark','Psychic'];
+			const allGroup_legend = ['All','TRUE','FALSE'];
+
+			const layer = d3.select("#graph").append("g");
+			const width = d3.select("#graph").attr("width");
+			const height = d3.select("#graph").attr("height");
+
+			d3.select("#selectButton_gen")
+		      .selectAll('myOptions')
+		     	.data(allGroup_generation)
+		      .enter()
+		    	.append('option')
+		      .text(function (d) { return d; }) // text showed in the menu
+		      .attr("value", function (d) { return d; })
+
+			d3.select("#selectButton_type")
+		      .selectAll('myOptions')
+		     	.data(allGroup_type)
+		      .enter()
+		    	.append('option')
+		      .text(function (d) { return d; }) // text showed in the menu
+		      .attr("value", function (d) { return d; })
+
+			d3.select("#selectButton_legend")
+		      .selectAll('myOptions')
+		     	.data(allGroup_legend)
+		      .enter()
+		    	.append('option')
+		      .text(function (d) { return d; }) // text showed in the menu
+		      .attr("value", function (d) { return d; })
+
+
+			d3.csv("Pokemon.csv").then(data0=> {
+				data = data0.map((x) => x);
+
+
+
+				requestData (data, 24)
+				drawnet(data)
+				// d3.selectAll(".node")
+				// 	.call( d3.drag().on("start",drag_begin)
+	      //           .on("drag",dragging)
+	      //           .on("end",drag_end) )
+
+				d3.selectAll("select").on("change", function(d) {
+					d3.selectAll("image").remove();
+			        let selectedGroup_gen = d3.select("#selectButton_gen").property("value");
+			        let selectedGroup_type = d3.select("#selectButton_type").property("value");
+							// let selectedGroup_type = "Fire";
+			        let selectedGroup_legend = d3.select("#selectButton_legend").property("value");
+
+			        let filtered_data = data0.filter(function(d){
+
+			        	if((d['Type 1'] ===selectedGroup_type || d['Type 2'] ===selectedGroup_type ||selectedGroup_type==='All')
+			        		&&(d['Legendary']===selectedGroup_legend || selectedGroup_legend==='All')
+			        		&&(d['Generation'] ===selectedGroup_gen || selectedGroup_gen==='All'))
+			    				{return d}																			
+			    	});
+
+			    	console.log(filtered_data);
+			      drawnet(filtered_data);
+	        	});
+
+			})
+
+			function drawnet(data4){
+		        let total_max = 0;
+		        let attack_max = 0;
+		        let defense_max = 0;
+		        let hp_max = 0;
+		        let speed_max = 0;
+		        let sp_atk_max = 0;
+		        let sp_def_max = 0;
+
+
+		        const total_pokemon_count = data4.length;
+		        console.log(`get count: ${total_pokemon_count}`);
+		        let random_pokemon_index = generate_rand(20, total_pokemon_count);
+		        console.log(random_pokemon_index);
+		        let edges = populate_edges(random_pokemon_index);
+		        let nodes = [];
+
+		        // d3.selectAll("image").remove();
+		        for (let i=0; i<random_pokemon_index.length; i++){
+		          let each = {id: random_pokemon_index[i], x: width/2.0 + d3.randomUniform(-200,200)(), y:height/2.0 + d3.randomUniform(-200,200)()};
+		          nodes.push(each);
+		        };
+		        console.log("draw net");
+		        draw();
+
+		        function draw(){
+							d3.selectAll("image").remove();
+							console.log(nodes);
+		          var sim = d3.forceSimulation()
+		                  .nodes(nodes)
+		                  .force("links", d3.forceLink()   // Keep nodes that are connected near each other
+		                                      .links(edges)           // give the force an array of source/target objects
+		                                      .id( d => d['id'] ) )
+		                                                 // if source and target don't provide array indices for nodes, .id will tell the force what to look for in the nodes when it is trying to connect things together. Provide a getter function for _node elements_
+		                  .force("repulse", d3.forceManyBody().strength(-3000) ) // electrostatic repulsion between all nodes to space them out
+		                  .force("center", d3.forceCenter(width/2.0, height/2.0)) // centering force to make sure points don't fly away completely
+		                  .alphaDecay(0.01)
+		                  .on("tick", render);
+		        }
+
+
+		        function render() {
+		          var circles = layer.selectAll("image.node").data(nodes)
+		                 .join(
+		                    enter => enter.append("image")
+
+		                                  .attr("class","node")
+		                                  .attr("xlink:href", (d) => {
+												let id = "";
+												try {
+													id = data4[d.id].Name.toLowerCase();
+												}
+												catch(error){
+													id = "pikachu";
+												}
+												finally{
+													return "./images/" + id +".png"
+												}
+											})
+										  .attr("x", 0)
+		                                  .attr("y", 0)
+		             //                      .attr('width', 200)
+    									  // .attr('height', 200)
+		                                  .on("mouseenter", enterCircle)
+		                                  .on("mouseout", outCircle)
+		                                  .on("click", selectCircle)
+
+		                  )
+		                 .attr("transform", d => `translate(${d.x},${d.y})`);
+
+		        }
+		     //    im = d3.selectAll('image.node');
+		     //    im.on("mouseover", function() {	      
+				   //  	d3.select(this)
+							// .transition().duration(100)
+							// .attr("stroke","black")
+							// .attr("stroke-width", 4)
+							// .attr('opacity', 1)
+							// .attr("r", 10)
+							// ;
+
+		        let tooltipWidth = 120;
+		        let tooltipHeight = 40;
+
+		        let tooltip = layer.append("g")
+		                            .attr("class", "tooltip")
+		                            .attr("visibility", "hidden")
+
+		        let rect = tooltip.append("rect")
+				                .attr("class", "label")
+				                .attr("fill", "black")
+				                .attr("opacity", 0.9)
+				                .attr("x", -tooltipWidth / 2.0)
+				                .attr("y", 0)
+				                .attr("width", tooltipWidth)
+				                .attr("height", tooltipHeight)
+
+		        let txt = tooltip.append("text")
+			                     .attr("class", "txt1")
+			                     .attr("fill", "white")
+			                     .attr("text-anchor","middle")
+			                     .attr("alignment-baseline","hanging")
+			                     .attr("x", 0)
+			                     .attr("y", 2);
+
+		        let txt2 = tooltip.append("text")
+			                      .attr("class", "txt2")
+			                      .attr("fill", "white")
+			                      .attr("text-anchor","middle")
+			                      .attr("alignment-baseline","hanging")
+			                      .attr("x", 0)
+			                      .attr("y", 22);
+
+
+
+		        let button = d3.select(".big-button").on("click", refresh);
+
+		        function refresh(){
+		          random_pokemon_index = generate_rand(20, total_pokemon_count);
+		          // console.log(random_pokemon_index);
+		          edges = populate_edges(random_pokemon_index);
+		          nodes = [];
+		          for (let i=0; i<random_pokemon_index.length; i++){
+		            let each = {id: random_pokemon_index[i], x: width/2.0 + d3.randomUniform(-200,200)(), y:height/2.0 + d3.randomUniform(-200,200)()};
+		            // console.log(each);
+		            nodes.push(each);
+		          };
+		          // nodes = new_nodes;
+		          // edges = new_edges;
+		          d3.selectAll("image").remove();
+		          draw();
+		        }
+
+		        function enterCircle(){
+		          let circle = d3.select(this)
+		          id = circle.datum().id;
+		          // console.log(id);
+		          let xPos = circle.datum().x;
+		          let yPos = circle.datum().y;
+		          console.log(circle._groups[0]);
+		          im = circle._groups[0];
+				  d3.select(this)
+				    .transition().duration(100)
+			        .attr('width', 180)
+			        .attr('height', 180)
+		          txt.text(data4[id].Name);
+		          tooltip.style("visibility","visible");
+		          tooltip.attr("transform",`translate(${xPos},${yPos})`);
+
+		          let type = data4[id]["Type 1"];
+		          txt2.text(type);
+		          let legend = data4[id]["Legendary"];
+		          // console.log(data4[id]);
+		          if (legend === "True") {
+		            rect.attr("fill", "#ffbf00");
+		          }
+		          else {
+		          	rect.attr("fill", colors[type]);
+		          }
+
+		        }
+
+		        function outCircle(){
+		        	d3.select(this)
+		        	    .transition().duration(100)
+				        .attr('width', 120)
+				        .attr('height', 120)
+					tooltip.style("visibility","hidden");
+					txt.attr("fill", "white");
+					txt2.attr("fill", "white");
+					rect.attr("fill", "black");
+				}
+		    }
+
+			function requestData (nodes, id) {
+				d3.select('#quality').remove();
+				let name = nodes[id].Name.toLowerCase();
+
+				d3.select('#l_name').text('Pokemon Name&ID: '+nodes[id].Name +' \#'+nodes[id].ID);
+				d3.select('#l_type').text('Pokemon Type: '+nodes[id]['Type 1'] +' '+nodes[id]['Type 2'] );
+				d3.select('#l_gen').text('Pokemon Generation: '+nodes[id].Generation );
+				d3.select('#l_leg').text('Legendary Pokemon: '+nodes[id].Legendary );
+				d3.select('#l_total').text('Total Value: '+nodes[id].Total );
+
+				d3.select('#portait')
+					.attr('src', './images/'+name+'.png');
+
+				let values = [Number(nodes[id].HP),Number(nodes[id].Attack),Number(nodes[id].Defense),Number(nodes[id].Sp_Atk),Number(nodes[id].Sp_Def),Number(nodes[id].Speed)] ;
+
+				for (var i = 0; i < values.length; i++){
+					if (values[i] > 150){
+						values[i] = 150;
+					}
+					values[i] /= 15;
+				}
+
+
+				let features = ["HP","Attack","Defense","Sp_Atk","Sp_Def","Speed"];
+
+			    var data3 = {}
+			    features.forEach(( d,i) =>{data3[d] = values[i]} );
+
+
+				let svg = d3.select("body").append("svg")
+							.attr('id', 'quality')
+						    .attr("width", 600)
+						    .attr("height", 600)
+						    .attr('transform', "translate(350 0)")
+						    
+			    let radialScale = d3.scaleLinear()
+								    .domain([0,10])
+								    .range([0,250]);
+
+				let ticks = [2,4,6,8,10];
+				ticks.forEach(t =>
+				    svg.append("circle")
+				    .attr("cx", 300)
+				    .attr("cy", 300)
+				    .attr("fill", "none")
+				    .attr("stroke", "gray")
+				    .attr("r", radialScale(t))
+				);
+				ticks.forEach(t =>
+				    svg.append("text")
+				    .attr("x", 305)
+				    .attr("y", 295 - radialScale(t))
+				    .text(t.toString())
+				);
+				function angleToCoordinate(angle, value){
+				    let x = Math.cos(angle) * radialScale(value);
+				    let y = Math.sin(angle) * radialScale(value);
+				    return {"x": 300 + x, "y": 300 - y};
+				}
+				for (var i = 0; i < features.length; i++) {
+				    let ft_name = features[i];
+				    let angle = (Math.PI / 2) + (2 * Math.PI * i / features.length);
+				    let line_coordinate = angleToCoordinate(angle, 10);
+				    let label_coordinate = angleToCoordinate(angle, 11);
+
+				    //draw axis line
+				    svg.append("line")
+				    .attr("x1", 300)
+				    .attr("y1", 300)
+				    .attr("x2", line_coordinate.x)
+				    .attr("y2", line_coordinate.y)
+				    .attr("stroke","black");
+
+				    //draw axis label
+				    svg.append("text")
+				    .attr("x", label_coordinate.x)
+				    .attr("y", label_coordinate.y)
+				    .attr("text-anchor", "middle")
+				    .text(ft_name);
+				}
+				let line = d3.line()
+				    .x(d => d.x)
+				    .y(d => d.y);
+
+
+				function getPathCoordinates(data_point){
+				    let coordinates = [];
+				    for (var i = 0; i < features.length; i++){
+				        let ft_name = features[i];
+				        let angle = (Math.PI / 2) + (2 * Math.PI * i / features.length);
+				        coordinates.push(angleToCoordinate(angle, data_point[ft_name]));
+				    }
+				    return coordinates;
+				}
+
+
+			    let d = data3;
+			    node = nodes[id]
+			    let color = colors[node['Type 1']];
+			    // console.log(node['Type 1'])
+			    let coordinates = getPathCoordinates(d);
+
+				//draw the path element
+				svg.append("path")
+				    .datum(coordinates)
+				    .attr("d",line)
+				    .attr("stroke-width", 3)
+				    .attr("stroke", color)
+				    .attr("fill", color)
+				    .attr("stroke-opacity", 1)
+				    .attr("opacity", 0.5);
+			}
+
+			function find_pokemon(){
+				input = Number(document.getElementById("pid").value) ;
+				// console.log(input)
+				for (var i = 0; i < data.length; i++){
+					if (Number(data[i].ID)===input){
+						// console.log(i);
+						requestData(data, i);
+						break;
+					}
+				}
+				// console.log(input);
+				return false;
+			}
+			function selectCircle(){
+				let circle = d3.select(this);
+				// requestData(circle.datum().id)
+				i=circle.datum().id;
+				// console.log(i)
+				requestData(data, Number(i));
+
+
+			}
+
+			function populate_edges(indexArray){
+				edges = [];
+				for (let i = 0; i<indexArray.length; i++){
+				  for (let j=0; j<indexArray.length; j++){
+				    if (i != j){
+				      let temp_obj = {"source": indexArray[i], "target": indexArray[j]};
+				      edges.push(temp_obj);
+				    }
+				  }
+				}
+				return edges;
+			}
+
+			function generate_rand(num, count){
+				console.log("start generating");
+				var arr = [];
+				if (count < num) {
+					num = count;
+				}
+				while(arr.length < num){
+						console.log("in loop");
+				    var r = Math.floor(Math.random() * count);
+				    if(arr.indexOf(r) === -1) arr.push(r);
+				}
+				return arr
+			}
+
+			function drag_begin(event, d) {
+				if (!event.active) {
+				sim.alphaTarget(0.1).restart();
+				}
+				d.fx = event.x;
+				d.fy = event.y;
+			}
+
+			function dragging(event, d) {
+				d.fx = event.x;
+				d.fy = event.y;
+			}
+
+			function drag_end(event, d) {
+				if (!event.active) {
+				sim.alphaTarget(0);
+				}
+				d.fx = null;
+				d.fy = null;
+			}
+		</script>
+
+	</body>
+</html>
